@@ -3,59 +3,57 @@ import folium
 from streamlit_folium import st_folium
 
 # 1. 페이지 설정
-st.set_page_config(
-    page_title="서울 외국인 인기 관광지 Top 10",
-    page_icon="🗺️",
-    layout="wide"
-)
+st.set_page_config(page_title="서울 스마트 가이드", page_icon="🗺️", layout="wide")
 
-# 2. 타이틀 및 앱 소개
-st.title("🇰🇷 외국인이 가장 사랑하는 서울 관광지 Top 10")
-st.write("스트림릿과 폴리움(Folium) 지도를 활용하여 외국인 관광객에게 가장 인기 있는 서울의 명소 10곳을 소개합니다.")
+# 스타일링 (중앙 정렬 및 여백 제어)
+st.markdown("""
+    <style>
+    .main { text-align: center; }
+    .stSelectbox { width: 50% !important; margin: 0 auto; }
+    </style>
+    """, unsafe_allow_name_with_html=True)
 
-# 3. 데이터 정의 (관광지 이름, 위도, 경도, 설명)
-tourist_spots = [
-    {"name": "경복궁", "lat": 37.5796, "lon": 126.9770, "desc": "한국의 대표적인 조선시대 법궁, 한복 체험 명소"},
-    {"name": "N서울타워 (남산타워)", "lat": 37.5512, "lon": 126.9882, "desc": "서울 시내를 한눈에 내려다볼 수 있는 야경 명소 및 사랑의 자물쇠"},
-    {"name": "명동 쇼핑거리", "lat": 37.5621, "lon": 126.9850, "desc": "K-뷰티, 길거리 음식, 쇼핑의 중심지"},
-    {"name": "북촌한옥마을", "lat": 37.5829, "lon": 126.9835, "desc": "실제 주민들이 거주하는 전통 한옥 양식의 보존 구역"},
-    {"name": "인사동", "lat": 37.5744, "lon": 126.9875, "desc": "한국 랜드마크 굿즈, 전통 찻집, 골동품과 화랑이 가득한 곳"},
-    {"name": "동대문디자인플라자 (DDP)", "lat": 37.5665, "lon": 127.0092, "desc": "자하 하디드가 설계한 세계 최대 규모의 3차원 비정형 건축물"},
-    {"name": "홍대 거리", "lat": 37.5568, "lon": 126.9239, "desc": "젊음과 인디 문화, 버스킹, 이색 카페와 밤문화의 중심지"},
-    {"name": "롯데월드타워 & 몰", "lat": 37.5126, "lon": 127.1025, "desc": "세계 5위 높이의 초고층 빌딩과 서울스카이 전망대"},
-    {"name": "강남역 & 코엑스 (별마당도서관)", "lat": 37.5119, "lon": 127.0589, "desc": "강남 스타일의 상징이자 인스타 명소인 거대 오픈 도서관"},
-    {"name": "광장시장", "lat": 37.5701, "lon": 127.0010, "desc": "넷플릭스에도 소개된 빈대떡, 마약김밥 등 한국 길거리 음식의 천국"}
-]
+st.title("📍 외국인을 위한 서울 주요 관광지 Top 10")
+st.subheader("지도를 클릭하거나 아래에서 장소를 선택하여 상세 정보를 확인하세요.")
 
-# 4. 화면 레이아웃 분할 (왼쪽: 지도, 오른쪽: 상세 정보 카드)
-col1, col2 = st.columns([2, 1])
+# 2. 상세 데이터 정의
+tourist_spots = {
+    "경복궁": {"lat": 37.5796, "lon": 126.9770, "station": "3호선 경복궁역 5번 출구", 
+            "detail": "한복 대여 시 무료 입장이 가능하며, 경회루의 아름다운 연못 경관과 매 시각 진행되는 수문장 교대식을 관람하는 것이 최고의 묘미입니다. 역사와 전통을 한곳에서 느낄 수 있는 서울의 상징입니다."},
+    "N서울타워": {"lat": 37.5512, "lon": 126.9882, "station": "4호선 명동역에서 셔틀버스/케이블카 이용", 
+             "detail": "남산 정상의 사랑의 자물쇠 존에서 추억을 남길 수 있으며, 타워 전망대에서 360도로 펼쳐지는 서울의 화려한 야경을 한눈에 담아보세요. 산책로를 따라 걷는 코스도 인기가 많습니다."},
+    "명동": {"lat": 37.5630, "lon": 126.9842, "station": "4호선 명동역 6번 출구", 
+           "detail": "수많은 화장품 매장과 K-패션 스토어를 구경할 수 있으며, 저녁마다 열리는 길거리 음식 마켓에서 떡볶이와 회오리 감자 등 대표 먹거리를 즐길 수 있습니다. 쇼핑과 미식의 천국입니다."},
+    "북촌한옥마을": {"lat": 37.5829, "lon": 126.9835, "station": "3호선 안국역 2번 출구", 
+               "detail": "실제 주민들이 거주하는 전통 한옥들 사이를 산책하며 조선시대 정취를 느낄 수 있고, 곳곳에 숨겨진 공방에서 전통 공예를 직접 체험해보는 것도 추천합니다. 조용한 관람 매너가 필수입니다."},
+    "홍대거리": {"lat": 37.5575, "lon": 126.9245, "station": "2호선 홍대입구역 9번 출구", 
+            "detail": "매일 밤 거리 공연가들의 버스킹 쇼를 감상할 수 있으며, 이색 테마 카페와 빈티지 숍, 그리고 에너지 넘치는 클럽 문화를 통해 서울의 젊음을 만끽할 수 있는 곳입니다. 예술적 감각이 넘치는 거리입니다."},
+    "인사동": {"lat": 37.5744, "lon": 126.9875, "station": "3호선 안국역 6번 출구", 
+            "detail": "쌈지길에서 아기자기한 공예품을 쇼핑하고 화랑을 구경한 뒤, 골목 안쪽에 위치한 고즈넉한 전통 찻집에서 쌍화차나 식혜 한 잔의 여유를 즐겨보세요. 한국 고유의 기념품을 찾기에 가장 좋은 장소입니다."},
+    "DDP (동대문디자인플라자)": {"lat": 37.5668, "lon": 127.0094, "station": "2호선 동대문역사문화공원역 1번 출구", 
+                          "detail": "우주선을 닮은 건축물을 배경으로 사진을 남기고, 정기적으로 열리는 패션쇼나 디자인 전시회, 밤마다 빛나는 조형물들을 감상할 수 있습니다. 야경 출사지로도 매우 유명합니다."},
+    "여의도 한강공원": {"lat": 37.5284, "lon": 126.9331, "station": "5호선 여의나루역 2, 3번 출구", 
+                 "detail": "돗자리를 펴고 배달 치킨과 편의점 라면을 즐기는 '피크닉'이 필수 코스이며, 대여 자전거로 강바람을 맞으며 달리는 활동이 인기가 많습니다. 유람선을 타고 한강을 감상할 수도 있습니다."},
+    "광장시장": {"lat": 37.5701, "lon": 126.9997, "station": "1호선 종로5가역 8번 출구", 
+            "detail": "넷플릭스에 소개된 칼국수와 빈대떡, 육회를 맛보며 한국 시장 특유의 활기찬 분위기를 경험하고 전통 침구와 원단 시장도 둘러볼 수 있습니다. 한국인의 '시장 정'을 느낄 수 있는 곳입니다."},
+    "롯데월드타워": {"lat": 37.5126, "lon": 127.1025, "station": "2호선 잠실역 1번 출구", 
+               "detail": "서울스카이 전망대에서 아찔한 스카이브릿지 체험을 하고 아쿠아리움과 쇼핑몰을 즐긴 뒤, 바로 옆 석촌호수 산책로에서 휴식을 취하기 좋습니다. 세계 5위 높이의 압도적인 랜드마크입니다."}
+}
 
-with col1:
-    st.subheader("🗺️ 서울 관광 지도")
+# 3. 지도 렌더링 (중앙 80% 폭 구현을 위해 컬럼 배치)
+empty_left, col_map, empty_right = st.columns([1, 8, 1])
+
+with col_map:
+    # 지도 생성 (색감이 풍부한 CartoDB Voyager 타일 사용)
+    m = folium.Map(location=[37.555, 126.985], zoom_start=11, tiles="CartoDB Voyager")
     
-    # 서울 중심부 좌표로 기본 지도 생성
-    m = folium.Map(location=[37.555, 126.985], zoom_start=12)
-    
-    # 마커 추가
-    for idx, spot in enumerate(tourist_spots, 1):
-        popup_content = f"<b>{idx}. {spot['name']}</b><br><span style='color:gray;'>{spot['desc']}</span>"
+    # 마커 추가 (파란색)
+    for name, info in tourist_spots.items():
         folium.Marker(
-            location=[spot['lat'], spot['lon']],
-            popup=folium.Popup(popup_content, max_width=300),
-            tooltip=f"{idx}. {spot['name']}",
-            icon=folium.Icon(color="red", icon="info-sign")
+            location=[info['lat'], info['lon']],
+            popup=folium.Popup(f"<b>{name}</b>", max_width=200),
+            tooltip=name,
+            icon=folium.Icon(color='blue', icon='info-sign')
         ).add_to(m)
     
-    # 스트림릿 앱에 Folium 지도 렌더링
-    st_folium(m, width="100%", height=550)
-
-with col2:
-    st.subheader("📌 명소 리스트")
-    # 오른쪽에 깔끔하게 리스트 형태로 정보 제공
-    for idx, spot in enumerate(tourist_spots, 1):
-        with st.expander(f"{idx}. {spot['name']}"):
-            st.write(f"**설명:** {spot['desc']}")
-            st.write(f"**좌표:** 위도 {spot['lat']}, 경도 {spot['lon']}")
-
-# 푸터
-st.caption("Data source: 가상 트렌드 및 한국관광공사 외국인 선호도 종합 | Made with Streamlit🎈")
+    # 지도 표시 (폭을 100%로 설정하

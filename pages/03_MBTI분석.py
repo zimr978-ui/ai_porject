@@ -39,8 +39,7 @@ try:
     mbti_types = df.columns[1:]
     percentages = [country_data[mbti] * 100 for mbti in mbti_types]  # 백분율(%)로 변환
 
-    # 데이터프레임으로 변환 후 정렬 (비율이 높은 순서대로 그래프를 그리거나 원본 순서 유지)
-    # 여기서는 원본 MBTI 순서를 유지하면서 1등을 찾습니다.
+    # 데이터프레임으로 변환
     plot_df = pd.DataFrame({
         'MBTI': mbti_types,
         'Percentage': percentages
@@ -51,20 +50,21 @@ try:
     max_val = plot_df['Percentage'].max()
     max_mbti = plot_df.loc[max_idx, 'MBTI']
 
-    # 2. 색상 지정 알고리즘 (1등은 노란색, 나머지는 하늘색에서 흐려지는 그라데이션)
-    # 1등을 제외한 나머지 데이터들의 순위를 매겨 그라데이션 강도를 결정합니다.
-    plot_df['Rank'] = plot_df['Percentage'].rank(ascending=False, method='first')
-    
+    # 2. 색상 및 텍스트 레이블 지정 알고리즘
     colors = []
+    text_labels = []
+    
     for idx, row in plot_df.iterrows():
+        val = row['Percentage']
         if idx == max_idx:
-            # 1등: 밝고 선명한 노란색
+            # 1등: 밝고 선명한 노란색 및 👑 표시
             colors.append('#FFD700') 
+            text_labels.append(f"🥇 {val:.1f}%")
         else:
-            # 나머지: 비율이 높을수록 선명한 하늘색(#2196F3), 낮을수록 흐려지게(투명도 조색)
-            # 최댓값 대비 상대적 크기로 투명도(alpha) 결정 (최소 0.15 보장)
-            alpha = max(0.15, row['Percentage'] / max_val * 0.9)
+            # 나머지: 비율이 높을수록 선명한 하늘색(#2196F3), 낮을수록 흐려지게
+            alpha = max(0.15, val / max_val * 0.9)
             colors.append(f'rgba(33, 150, 243, {alpha})')
+            text_labels.append(f"{val:.1f}%")
 
     # 3. Plotly 막대그래프 생성
     fig = go.Figure()
@@ -75,7 +75,7 @@ try:
         marker_color=colors,
         marker_line_color='rgba(0,0,0,0.1)',
         marker_line_width=1,
-        text=[f"{val Gold" if idx == max_idx else f"{val:.1f}%" for idx, val in enumerate(plot_df['Percentage'])],
+        text=text_labels,
         textposition='outside',
         hovertemplate="<b>%{x}</b>: %{y:.2f}%<extra></extra>"
     ))
@@ -88,7 +88,7 @@ try:
             font=dict(size=18)
         ),
         xaxis=dict(title="MBTI 유형", categoryorder='array', categoryarray=mbti_types),
-        yaxis=dict(title="비율 (%)", suffix="%", range=[0, max_val * 1.2]), # 텍스트가 잘리지 않도록 여유 공간 확보
+        yaxis=dict(title="비율 (%)", suffix="%", range=[0, max_val * 1.2]), # 텍스트 누락 방지 여유 공간
         margin=dict(l=40, r=40, t=60, b=40),
         plot_bgcolor='rgba(255,255,255,0.9)',
         paper_bgcolor='rgba(0,0,0,0)',

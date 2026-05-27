@@ -24,10 +24,20 @@ st.write("행정구를 선택하면 연령별 인구 분포를 볼 수 있습니
 # -----------------------------
 @st.cache_data
 def load_data():
+
+    # CP949 우선 시도
     try:
-        df = pd.read_csv("population.csv", encoding="cp949")
+        df = pd.read_csv(
+            "population.csv",
+            encoding="cp949"
+        )
+
+    # 실패 시 UTF-8 시도
     except:
-        df = pd.read_csv("population.csv", encoding="utf-8")
+        df = pd.read_csv(
+            "population.csv",
+            encoding="utf-8"
+        )
 
     return df
 
@@ -39,11 +49,12 @@ df = load_data()
 # -----------------------------
 region_col = df.columns[0]
 
-# 연령 컬럼 추출
-age_columns = df.columns[3:104]
-
 # 지역 이름 정리
-regions = df[region_col].astype(str).str.replace("서울특별시 ", "", regex=False)
+regions = (
+    df[region_col]
+    .astype(str)
+    .str.replace("서울특별시 ", "", regex=False)
+)
 
 # -----------------------------
 # 행정구 선택
@@ -53,12 +64,26 @@ selected_region = st.selectbox(
     regions
 )
 
-# 선택 데이터
+# 선택된 행
 selected_row = df[regions == selected_region]
 
-# 나이 / 인구수
+# -----------------------------
+# 연령 / 인구수 처리
+# -----------------------------
 ages = list(range(101))
-populations = selected_row.iloc[0, 3:104].astype(int).values
+
+# 숫자 안전 변환
+population_data = selected_row.iloc[0, 3:104]
+
+populations = (
+    pd.to_numeric(
+        population_data,
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
+    .values
+)
 
 # -----------------------------
 # 그래프 생성
@@ -72,8 +97,13 @@ ax.plot(
     linewidth=3
 )
 
-# 제목 및 축
-ax.set_title(f"{selected_region} 연령별 인구 분포", fontsize=18)
+# 제목
+ax.set_title(
+    f"{selected_region} 연령별 인구 분포",
+    fontsize=18
+)
+
+# 축 라벨
 ax.set_xlabel("나이", fontsize=14)
 ax.set_ylabel("인구수", fontsize=14)
 
@@ -81,17 +111,21 @@ ax.set_ylabel("인구수", fontsize=14)
 ax.set_xticks(range(0, 101, 10))
 
 # 세로 구분선
-ax.grid(axis="x", linestyle="--", alpha=0.5)
+ax.grid(
+    axis="x",
+    linestyle="--",
+    alpha=0.5
+)
 
 # 디자인
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 
-# 출력
+# Streamlit 출력
 st.pyplot(fig)
 
 # -----------------------------
-# 데이터 테이블
+# 데이터 표
 # -----------------------------
 st.subheader("연령별 인구 데이터")
 
@@ -100,4 +134,7 @@ chart_df = pd.DataFrame({
     "인구수": populations
 })
 
-st.dataframe(chart_df, use_container_width=True)
+st.dataframe(
+    chart_df,
+    use_container_width=True
+)

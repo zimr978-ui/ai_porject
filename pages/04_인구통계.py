@@ -1,16 +1,12 @@
-# app.py
-
-```python
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
-from matplotlib import font_manager, rc
 
 # -----------------------------
 # 한글 폰트 설정
 # -----------------------------
-plt.rcParams['font.family'] = 'Malgun Gothic'
-plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams["font.family"] = "NanumGothic"
+plt.rcParams["axes.unicode_minus"] = False
 
 # -----------------------------
 # 페이지 설정
@@ -21,42 +17,47 @@ st.set_page_config(
 )
 
 st.title("서울시 행정구별 연령 인구 분석")
-st.markdown("행정구를 선택하면 연령별 인구 분포를 확인할 수 있습니다.")
+st.write("행정구를 선택하면 연령별 인구 분포를 볼 수 있습니다.")
 
 # -----------------------------
 # 데이터 불러오기
 # -----------------------------
 @st.cache_data
-
 def load_data():
-    df = pd.read_csv("population.csv", encoding="cp949")
+    try:
+        df = pd.read_csv("population.csv", encoding="cp949")
+    except:
+        df = pd.read_csv("population.csv", encoding="utf-8")
+
     return df
 
 
 df = load_data()
 
 # -----------------------------
-# 컬럼 정리
+# 컬럼 설정
 # -----------------------------
 region_col = df.columns[0]
 
-# 연령 데이터 컬럼만 추출
+# 연령 컬럼 추출
 age_columns = df.columns[3:104]
 
-# 행정구 리스트 생성
-regions = df[region_col].str.replace("서울특별시 ", "")
+# 지역 이름 정리
+regions = df[region_col].astype(str).str.replace("서울특별시 ", "", regex=False)
 
+# -----------------------------
+# 행정구 선택
+# -----------------------------
 selected_region = st.selectbox(
     "행정구 선택",
     regions
 )
 
-# -----------------------------
-# 선택된 데이터 추출
-# -----------------------------
+# 선택 데이터
 selected_row = df[regions == selected_region]
 
-ages = list(range(0, 101))
+# 나이 / 인구수
+ages = list(range(101))
 populations = selected_row.iloc[0, 3:104].astype(int).values
 
 # -----------------------------
@@ -71,23 +72,26 @@ ax.plot(
     linewidth=3
 )
 
-# 제목 및 축 설정
+# 제목 및 축
 ax.set_title(f"{selected_region} 연령별 인구 분포", fontsize=18)
 ax.set_xlabel("나이", fontsize=14)
 ax.set_ylabel("인구수", fontsize=14)
 
-# x축 10살 단위 구분선
+# x축 10살 단위
 ax.set_xticks(range(0, 101, 10))
-ax.grid(axis='x', linestyle='--', alpha=0.5)
 
-# 그래프 꾸미기
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
+# 세로 구분선
+ax.grid(axis="x", linestyle="--", alpha=0.5)
 
+# 디자인
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+
+# 출력
 st.pyplot(fig)
 
 # -----------------------------
-# 데이터 표 표시
+# 데이터 테이블
 # -----------------------------
 st.subheader("연령별 인구 데이터")
 
@@ -97,62 +101,3 @@ chart_df = pd.DataFrame({
 })
 
 st.dataframe(chart_df, use_container_width=True)
-```
-
----
-
-# requirements.txt
-
-```txt
-streamlit
-pandas
-matplotlib
-```
-
----
-
-# Streamlit Cloud 배포 방법
-
-## 1. 파일 구성
-
-아래와 같이 파일을 구성하세요.
-
-```txt
-project-folder/
-│
-├── app.py
-├── population.csv
-└── requirements.txt
-```
-
----
-
-## 2. GitHub 업로드
-
-1. GitHub 저장소 생성
-2. 위 파일 업로드
-3. Commit & Push
-
----
-
-## 3. Streamlit Cloud 배포
-
-1. Streamlit Cloud 접속
-2. GitHub 연동
-3. 저장소 선택
-4. Main file path:
-
-```txt
-app.py
-```
-
-5. Deploy 클릭
-
----
-
-## 4. 참고 사항
-
-* CSV 파일은 UTF-8이 아니라 CP949 인코딩으로 읽도록 설정됨
-* 그래프 색상은 핫핑크 적용
-* x축은 10살 단위로 표시
-* 한글 깨짐 방지 설정 포함

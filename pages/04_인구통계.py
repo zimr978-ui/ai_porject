@@ -1,140 +1,169 @@
+# app.py
+
+```python
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import streamlit as st
-
-# -----------------------------
-# 한글 폰트 설정
-# -----------------------------
-plt.rcParams["font.family"] = "NanumGothic"
-plt.rcParams["axes.unicode_minus"] = False
+import matplotlib.font_manager as fm
 
 # -----------------------------
 # 페이지 설정
 # -----------------------------
 st.set_page_config(
-    page_title="서울 인구 연령 분석",
+    page_title="서울 인구 연령별 분석",
     layout="wide"
 )
 
-st.title("서울시 행정구별 연령 인구 분석")
-st.write("행정구를 선택하면 연령별 인구 분포를 볼 수 있습니다.")
+st.title("📊 서울 행정구별 연령 인구 분석")
+st.markdown("행정구를 선택하면 연령별 인구 분포를 꺾은선 그래프로 보여줍니다.")
+
+# -----------------------------
+# 한글 폰트 설정
+# -----------------------------
+plt.rcParams['font.family'] = 'Malgun Gothic'
+plt.rcParams['axes.unicode_minus'] = False
 
 # -----------------------------
 # 데이터 불러오기
 # -----------------------------
 @st.cache_data
 def load_data():
-
-    # CP949 우선 시도
-    try:
-        df = pd.read_csv(
-            "population.csv",
-            encoding="cp949"
-        )
-
-    # 실패 시 UTF-8 시도
-    except:
-        df = pd.read_csv(
-            "population.csv",
-            encoding="utf-8"
-        )
-
+    df = pd.read_csv('population(1).csv', encoding='cp949')
     return df
 
 
 df = load_data()
 
 # -----------------------------
-# 컬럼 설정
+# 컬럼 정리
 # -----------------------------
-region_col = df.columns[0]
+# 연령 컬럼 추출
+age_columns = []
+age_labels = []
 
-# 지역 이름 정리
-regions = (
-    df[region_col]
-    .astype(str)
-    .str.replace("서울특별시 ", "", regex=False)
-)
+for col in df.columns:
+    if '세' in col and '계' not in col:
+        age_columns.append(col)
+
+        # 숫자만 추출
+        age = ''.join(filter(str.isdigit, col))
+
+        if age != '':
+            age_labels.append(int(age))
+
+# 행정구 컬럼 자동 탐색
+region_col = df.columns[0]
 
 # -----------------------------
 # 행정구 선택
 # -----------------------------
+regions = df[region_col].unique()
 selected_region = st.selectbox(
-    "행정구 선택",
+    '행정구를 선택하세요',
     regions
 )
 
-# 선택된 행
-selected_row = df[regions == selected_region]
-
 # -----------------------------
-# 연령 / 인구수 처리
+# 선택 데이터 추출
 # -----------------------------
-ages = list(range(101))
+selected_data = df[df[region_col] == selected_region]
 
-# 숫자 안전 변환
-population_data = selected_row.iloc[0, 3:104]
+if not selected_data.empty:
+    population_values = selected_data[age_columns].iloc[0].values
 
-populations = (
-    pd.to_numeric(
-        population_data,
-        errors="coerce"
+    # 숫자 변환
+    population_values = pd.to_numeric(population_values, errors='coerce')
+
+    # -----------------------------
+    # 그래프 생성
+    # -----------------------------
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    ax.plot(
+        age_labels,
+        population_values,
+        color='hotpink',
+        linewidth=3,
+        marker='o'
     )
-    .fillna(0)
-    .astype(int)
-    .values
-)
 
-# -----------------------------
-# 그래프 생성
-# -----------------------------
-fig, ax = plt.subplots(figsize=(14, 6))
+    # 제목 및 축 설정
+    ax.set_title(f'{selected_region} 연령별 인구 분포', fontsize=18)
+    ax.set_xlabel('나이', fontsize=14)
+    ax.set_ylabel('인구수', fontsize=14)
 
-ax.plot(
-    ages,
-    populations,
-    color="hotpink",
-    linewidth=3
-)
+    # 10살 단위 구분선
+    ax.set_xticks(range(0, max(age_labels)+1, 10))
+    ax.grid(True, axis='x', linestyle='--', alpha=0.7)
 
-# 제목
-ax.set_title(
-    f"{selected_region} 연령별 인구 분포",
-    fontsize=18
-)
+    # 여백 자동 조정
+    plt.tight_layout()
 
-# 축 라벨
-ax.set_xlabel("나이", fontsize=14)
-ax.set_ylabel("인구수", fontsize=14)
+    # 스트림릿 출력
+    st.pyplot(fig)
 
-# x축 10살 단위
-ax.set_xticks(range(0, 101, 10))
+    # 데이터 표 출력
+    chart_df = pd.DataFrame({
+        '나이': age_labels,
+        '인구수': population_values
+    })
 
-# 세로 구분선
-ax.grid(
-    axis="x",
-    linestyle="--",
-    alpha=0.5
-)
+    st.subheader('📋 연령별 인구 데이터')
+    st.dataframe(chart_df, use_container_width=True)
 
-# 디자인
-ax.spines["top"].set_visible(False)
-ax.spines["right"].set_visible(False)
+else:
+    st.warning('선택한 행정구 데이터를 찾을 수 없습니다.')
+```
 
-# Streamlit 출력
-st.pyplot(fig)
+---
 
-# -----------------------------
-# 데이터 표
-# -----------------------------
-st.subheader("연령별 인구 데이터")
+# requirements.txt
 
-chart_df = pd.DataFrame({
-    "나이": ages,
-    "인구수": populations
-})
+```txt
+streamlit
+pandas
+matplotlib
+```
 
-st.dataframe(
-    chart_df,
-    use_container_width=True
-)
+---
+
+# 스트림릿 클라우드 배포 방법
+
+## 1. 파일 구성
+
+아래처럼 파일을 구성하세요.
+
+```text
+project/
+├── app.py
+├── requirements.txt
+└── population(1).csv
+```
+
+---
+
+## 2. GitHub 업로드
+
+* GitHub 저장소 생성
+* 파일 업로드
+
+---
+
+## 3. Streamlit Cloud 배포
+
+* Streamlit Cloud 접속
+* GitHub 저장소 연결
+* app.py 선택
+* Deploy 클릭
+
+---
+
+## 4. 실행 결과
+
+기능:
+
+* 행정구 선택 가능
+* 연령별 인구 꺾은선 그래프 출력
+* 핫핑크 색상 적용
+* 10살 단위 세로 구분선 표시
+* 한글 깨짐 방지

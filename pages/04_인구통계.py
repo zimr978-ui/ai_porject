@@ -1,124 +1,88 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from pathlib import Path
 
-# -----------------------------------
-# 페이지 설정
-# -----------------------------------
 st.set_page_config(
-    page_title="서울 인구 분석",
-    layout="wide"
+page_title="인구통계",
+layout="wide"
 )
 
-st.title("📊 서울 행정구별 연령 인구 분석")
+st.title("📊 행정구별 연령 인구 분석")
 
-# -----------------------------------
 # 한글 설정
-# -----------------------------------
+
 plt.rcParams["font.family"] = "Malgun Gothic"
 plt.rcParams["axes.unicode_minus"] = False
 
-# -----------------------------------
-# CSV 경로
-# -----------------------------------
-BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = BASE_DIR / "population.csv"
+# CSV 읽기
 
-# -----------------------------------
-# 파일 존재 확인
-# -----------------------------------
-st.write("CSV 경로:", CSV_PATH)
+df = pd.read_csv("population.csv", encoding="cp949")
 
-if not CSV_PATH.exists():
-    st.error(f"CSV 파일 없음: {CSV_PATH}")
-    st.stop()
+# 첫 번째 컬럼 = 지역명
 
-# -----------------------------------
-# 데이터 불러오기
-# -----------------------------------
-@st.cache_data
-def load_data():
-    return pd.read_csv(CSV_PATH, encoding="cp949")
-
-df = load_data()
-
-# -----------------------------------
-# 행정구 컬럼
-# -----------------------------------
 region_col = df.columns[0]
 
-# -----------------------------------
 # 연령 컬럼 찾기
-# -----------------------------------
-age_columns = []
-age_numbers = []
+
+age_cols = []
+ages = []
 
 for col in df.columns:
 
-    if col.endswith("세"):
+```
+if "세" in col:
 
-        num = ''.join(filter(str.isdigit, col))
+    num = "".join(filter(str.isdigit, col))
 
-        if num != "":
-            age_columns.append(col)
-            age_numbers.append(int(num))
+    if num != "":
+        age_cols.append(col)
+        ages.append(int(num))
+```
 
-# -----------------------------------
-# 행정구 선택
-# -----------------------------------
-regions = df[region_col].unique()
+# 지역 선택
 
-selected_region = st.selectbox(
-    "행정구를 선택하세요",
-    regions
+region = st.selectbox(
+"행정구 선택",
+df[region_col].unique()
 )
 
-# -----------------------------------
-# 선택 데이터
-# -----------------------------------
-selected_df = df[df[region_col] == selected_region]
+# 데이터 선택
 
-# -----------------------------------
-# 그래프 출력
-# -----------------------------------
-if len(selected_df) > 0:
+selected = df[df[region_col] == region]
 
-    values = selected_df[age_columns].iloc[0]
+# 인구 데이터
 
-    values = values.astype(str).str.replace(",", "")
+values = selected[age_cols].iloc[0]
 
-    values = pd.to_numeric(values)
+values = values.astype(str).str.replace(",", "")
 
-    fig, ax = plt.subplots(figsize=(14, 6))
+values = pd.to_numeric(values)
 
-    ax.plot(
-        age_numbers,
-        values,
-        color="hotpink",
-        linewidth=3,
-        marker="o"
-    )
+# 그래프
 
-    ax.set_title(f"{selected_region} 연령별 인구수", fontsize=20)
+fig, ax = plt.subplots(figsize=(14, 6))
 
-    ax.set_xlabel("나이", fontsize=14)
-    ax.set_ylabel("인구수", fontsize=14)
+ax.plot(
+ages,
+values,
+color="hotpink",
+linewidth=3
+)
 
-    # 10살 단위 구분선
-    ax.set_xticks(range(0, max(age_numbers) + 1, 10))
+ax.set_title(f"{region} 연령별 인구수")
 
-    ax.grid(
-        True,
-        axis="x",
-        linestyle="--",
-        alpha=0.5
-    )
+ax.set_xlabel("나이")
+ax.set_ylabel("인구수")
 
-    plt.tight_layout()
+# 10살 단위 선
 
-    st.pyplot(fig)
+ax.set_xticks(range(0, max(ages)+1, 10))
 
-else:
-    st.error("데이터가 없습니다.")
-    .
+ax.grid(
+True,
+axis="x",
+linestyle="--",
+alpha=0.5
+)
+
+st.pyplot(fig)

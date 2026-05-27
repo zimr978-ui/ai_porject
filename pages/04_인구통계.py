@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 # -----------------------------
-# 한글 설정
+# 한글 폰트 설정
 # -----------------------------
 plt.rcParams["font.family"] = "NanumGothic"
 plt.rcParams["axes.unicode_minus"] = False
@@ -12,18 +12,18 @@ plt.rcParams["axes.unicode_minus"] = False
 # 페이지 설정
 # -----------------------------
 st.set_page_config(
-    page_title="서울 인구 분석",
+    page_title="서울 인구 연령 분석",
     layout="wide"
 )
 
 st.title("서울시 행정구별 연령 인구 분석")
+st.write("행정구를 선택하면 연령별 인구 분포를 볼 수 있습니다.")
 
 # -----------------------------
 # 데이터 불러오기
 # -----------------------------
 @st.cache_data
 def load_data():
-
     try:
         df = pd.read_csv("population.csv", encoding="cp949")
     except:
@@ -39,12 +39,11 @@ df = load_data()
 # -----------------------------
 region_col = df.columns[0]
 
-# 지역명 정리
-regions = (
-    df[region_col]
-    .astype(str)
-    .str.replace("서울특별시 ", "", regex=False)
-)
+# 연령 컬럼 추출
+age_columns = df.columns[3:104]
+
+# 지역 이름 정리
+regions = df[region_col].astype(str).str.replace("서울특별시 ", "", regex=False)
 
 # -----------------------------
 # 행정구 선택
@@ -57,16 +56,9 @@ selected_region = st.selectbox(
 # 선택 데이터
 selected_row = df[regions == selected_region]
 
-# -----------------------------
-# 연령 데이터 처리
-# -----------------------------
+# 나이 / 인구수
 ages = list(range(101))
-
-# 숫자 변환 안정화
-populations = pd.to_numeric(
-    selected_row.iloc[0, 3:104],
-    errors="coerce"
-).fillna(0).astype(int).values
+populations = selected_row.iloc[0, 3:104].astype(int).values
 
 # -----------------------------
 # 그래프 생성
@@ -81,11 +73,7 @@ ax.plot(
 )
 
 # 제목 및 축
-ax.set_title(
-    f"{selected_region} 연령별 인구 분포",
-    fontsize=18
-)
-
+ax.set_title(f"{selected_region} 연령별 인구 분포", fontsize=18)
 ax.set_xlabel("나이", fontsize=14)
 ax.set_ylabel("인구수", fontsize=14)
 
@@ -93,11 +81,7 @@ ax.set_ylabel("인구수", fontsize=14)
 ax.set_xticks(range(0, 101, 10))
 
 # 세로 구분선
-ax.grid(
-    axis="x",
-    linestyle="--",
-    alpha=0.5
-)
+ax.grid(axis="x", linestyle="--", alpha=0.5)
 
 # 디자인
 ax.spines["top"].set_visible(False)

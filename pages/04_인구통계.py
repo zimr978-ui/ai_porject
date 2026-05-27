@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 # -----------------------------------
 # 페이지 설정
@@ -15,26 +16,31 @@ st.title("📊 서울 행정구별 연령 인구 분석")
 # -----------------------------------
 # 한글 설정
 # -----------------------------------
-plt.rcParams['font.family'] = 'Malgun Gothic'
-plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams["font.family"] = "Malgun Gothic"
+plt.rcParams["axes.unicode_minus"] = False
+
+# -----------------------------------
+# CSV 경로 설정
+# -----------------------------------
+BASE_DIR = Path(__file__).resolve().parent.parent
+CSV_PATH = BASE_DIR / "population(1).csv"
 
 # -----------------------------------
 # 데이터 불러오기
 # -----------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("population(1).csv", encoding="cp949")
-    return df
+    return pd.read_csv(CSV_PATH, encoding="cp949")
 
 df = load_data()
 
 # -----------------------------------
-# 첫 번째 컬럼 = 행정구
+# 행정구 컬럼
 # -----------------------------------
 region_col = df.columns[0]
 
 # -----------------------------------
-# 연령 컬럼 추출
+# 연령 컬럼 찾기
 # -----------------------------------
 age_columns = []
 age_numbers = []
@@ -60,21 +66,19 @@ selected_region = st.selectbox(
 )
 
 # -----------------------------------
-# 선택 데이터
+# 데이터 추출
 # -----------------------------------
 selected_df = df[df[region_col] == selected_region]
 
 # -----------------------------------
-# 그래프
+# 그래프 출력
 # -----------------------------------
 if len(selected_df) > 0:
 
     values = selected_df[age_columns].iloc[0]
 
-    # 쉼표 제거
     values = values.astype(str).str.replace(",", "")
 
-    # 숫자 변환
     values = pd.to_numeric(values)
 
     fig, ax = plt.subplots(figsize=(14, 6))
@@ -88,25 +92,23 @@ if len(selected_df) > 0:
     )
 
     ax.set_title(f"{selected_region} 연령별 인구수", fontsize=20)
+
     ax.set_xlabel("나이", fontsize=14)
     ax.set_ylabel("인구수", fontsize=14)
 
     # 10살 단위 구분선
     ax.set_xticks(range(0, max(age_numbers) + 1, 10))
-    ax.grid(True, axis="x", linestyle="--", alpha=0.5)
+
+    ax.grid(
+        True,
+        axis="x",
+        linestyle="--",
+        alpha=0.5
+    )
 
     plt.tight_layout()
 
     st.pyplot(fig)
-
-    # 표 출력
-    result_df = pd.DataFrame({
-        "나이": age_numbers,
-        "인구수": values
-    })
-
-    st.subheader("📋 데이터 보기")
-    st.dataframe(result_df, use_container_width=True)
 
 else:
     st.error("데이터를 찾을 수 없습니다.")

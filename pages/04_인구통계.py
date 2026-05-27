@@ -20,10 +20,19 @@ plt.rcParams["font.family"] = "Malgun Gothic"
 plt.rcParams["axes.unicode_minus"] = False
 
 # -----------------------------------
-# CSV 경로 설정
+# CSV 경로
 # -----------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = BASE_DIR / "population(1).csv"
+CSV_PATH = BASE_DIR / "population.csv"
+
+# -----------------------------------
+# 파일 존재 확인
+# -----------------------------------
+st.write("CSV 경로:", CSV_PATH)
+
+if not CSV_PATH.exists():
+    st.error(f"CSV 파일 없음: {CSV_PATH}")
+    st.stop()
 
 # -----------------------------------
 # 데이터 불러오기
@@ -49,11 +58,11 @@ for col in df.columns:
 
     if col.endswith("세"):
 
-        number = ''.join(filter(str.isdigit, col))
+        num = ''.join(filter(str.isdigit, col))
 
-        if number != "":
+        if num != "":
             age_columns.append(col)
-            age_numbers.append(int(number))
+            age_numbers.append(int(num))
 
 # -----------------------------------
 # 행정구 선택
@@ -66,7 +75,7 @@ selected_region = st.selectbox(
 )
 
 # -----------------------------------
-# 데이터 추출
+# 선택 데이터
 # -----------------------------------
 selected_df = df[df[region_col] == selected_region]
 
@@ -111,4 +120,4 @@ if len(selected_df) > 0:
     st.pyplot(fig)
 
 else:
-    st.error("데이터를 찾을 수 없습니다.")
+    st.error("데이터가 없습니다.")

@@ -5,55 +5,43 @@ import matplotlib.cm as cm
 import numpy as np
 
 st.set_page_config(
-    page_title="서울 기온 분석",
+    page_title="서울 날짜별 기온 분석",
     page_icon="🌡️",
     layout="wide"
 )
 
-st.title("🌡️ 서울 날짜별 기온 분석")
+st.title("🌡️ 서울 날짜별 최고·최저기온 분석")
 
 uploaded_file = st.file_uploader(
-    "seoul.csv 파일을 업로드하세요",
+    "seoul.csv 업로드",
     type=["csv"]
 )
 
 if uploaded_file is not None:
 
     try:
-        df = pd.read_csv(uploaded_file, encoding='cp949')
+        df = pd.read_csv(uploaded_file, encoding="cp949")
     except:
-        df = pd.read_csv(uploaded_file, encoding='utf-8')
+        df = pd.read_csv(uploaded_file, encoding="utf-8")
 
-    # 컬럼명 정리
-    df.columns = [
-        "날짜",
-        "지점",
-        "지점명",
-        "평균기온",
-        "최저기온",
-        "최고기온"
-    ]
+    # 날짜 문자열 정리
+    df["날짜"] = (
+        df["날짜"]
+        .astype(str)
+        .str.replace("\t", "", regex=False)
+        .str.strip()
+    )
 
-    # 날짜 변환
+    # 날짜형 변환
     df["날짜"] = pd.to_datetime(df["날짜"])
 
+    # 연월일 생성
     df["연도"] = df["날짜"].dt.year
     df["월"] = df["날짜"].dt.month
     df["일"] = df["날짜"].dt.day
 
-    st.sidebar.header("날짜 선택")
-
-    month = st.sidebar.selectbox(
-        "월",
-        range(1, 13),
-        index=7
-    )
-
-    day = st.sidebar.selectbox(
-        "일",
-        range(1, 32),
-        index=0
-    )
+    month = st.sidebar.selectbox("월 선택", range(1, 13))
+    day = st.sidebar.selectbox("일 선택", range(1, 32))
 
     selected = df[
         (df["월"] == month) &
@@ -61,26 +49,26 @@ if uploaded_file is not None:
     ].copy()
 
     selected = selected.dropna(
-        subset=["최고기온", "최저기온"]
+        subset=["최저기온(℃)", "최고기온(℃)"]
     )
-
-    if len(selected) == 0:
-        st.warning("해당 날짜의 데이터가 없습니다.")
-        st.stop()
 
     selected = selected.sort_values("연도")
 
-    st.subheader(f"{month}월 {day}일 연도별 기온")
-
-    fig, ax = plt.subplots(figsize=(14, 6))
+    if len(selected) == 0:
+        st.warning("해당 날짜 데이터가 없습니다.")
+        st.stop()
 
     years = selected["연도"].values
-    highs = selected["최고기온"].values
-    lows = selected["최저기온"].values
+    highs = selected["최고기온(℃)"].values
+    lows = selected["최저기온(℃)"].values
 
-    # 최고기온 무지개색 선
-    rainbow = cm.rainbow(np.linspace(0, 1, len(years)))
+    fig, ax = plt.subplots(figsize=(15, 7))
 
+    rainbow = cm.rainbow(
+        np.linspace(0, 1, len(years))
+    )
+
+    # 최고기온 무지개색
     for i in range(len(years)-1):
         ax.plot(
             years[i:i+2],
@@ -89,7 +77,6 @@ if uploaded_file is not None:
             linewidth=2
         )
 
-    # 최고기온 점
     ax.scatter(
         years,
         highs,
@@ -99,20 +86,19 @@ if uploaded_file is not None:
         label="최고기온"
     )
 
-    # 최저기온
+    # 최저기온 연파랑
     ax.plot(
         years,
         lows,
         color="lightblue",
-        linewidth=2.5,
+        linewidth=3,
         marker="o",
         markersize=4,
         label="최저기온"
     )
 
     ax.set_title(
-        f"{month}월 {day}일 연도별 최고·최저기온",
-        fontsize=16
+        f"{month}월 {day}일 연도별 최고·최저기온"
     )
 
     ax.set_xlabel("연도")
@@ -125,10 +111,11 @@ if uploaded_file is not None:
 
     st.dataframe(
         selected[
-            ["연도", "최저기온", "최고기온"]
-        ].reset_index(drop=True),
+            [
+                "연도",
+                "최저기온(℃)",
+                "최고기온(℃)"
+            ]
+        ],
         use_container_width=True
     )
-
-else:
-    st.info("CSV 파일을 업로드하세요.")
